@@ -31,25 +31,80 @@ struct Args {
     no_ci: bool,
 }
 
+/// 获取自适应全屏宽度的分隔线
+fn get_full_width_separator(character: char, color_func: fn(&str) -> colored::ColoredString) -> String {
+    // 获取终端宽度，如果无法获取则默认为80
+    let width = termsize::get().map_or(80, |size| size.cols as usize);
+    
+    // 创建分隔线
+    let separator = character.to_string().repeat(width);
+    
+    // 返回带颜色的分隔线
+    color_func(&separator).to_string()
+}
+
+/// 居中显示标题，使用全屏宽度
+fn print_centered_title(title: &str, color_func: fn(&str) -> colored::ColoredString) {
+    let width = termsize::get().map_or(80, |size| size.cols as usize);
+    
+    // 计算左侧填充以居中标题
+    let padding = (width.saturating_sub(title.len())) / 2;
+    let left_padding = " ".repeat(padding);
+    
+    println!("{}{}", left_padding, color_func(title));
+}
+
+/// 格式化打印提交标注
+fn print_formatted_commit_message(message: &str) {
+    if message.contains('\n') {
+        // 多行消息，分为标题和正文
+        let lines: Vec<&str> = message.split('\n').collect();
+        
+        // 打印标题
+        println!("{} {}", "标题:".bright_cyan(), lines[0]);
+        
+        // 打印正文 (如果有)
+        let mut has_content = false;
+        
+        // 遍历除标题外的所有行
+        for line in lines.iter().skip(1) {
+            if !line.trim().is_empty() {
+                if !has_content {
+                    println!("{}", "正文:".bright_cyan());
+                    has_content = true;
+                }
+                println!("  {}", line);
+            }
+        }
+        
+        // 如果没有内容，也显示"正文："但是是空的
+        if !has_content && message.contains("[skip ci]") {
+            println!("{}", "正文:".bright_cyan());
+            println!("  • (无额外内容)");
+        }
+    } else {
+        // 单行消息，只有标题
+        println!("{} {}", "标题:".bright_cyan(), message);
+    }
+}
+
 fn main() -> Result<()> {
-    println!("{}", "====================================".bright_green());
-    println!("{}", "         项目提交与推送助手".bright_green());
-    println!("{}", "====================================".bright_green());
+    // 创建自适应全屏分割线
+    let separator = get_full_width_separator('=', |s| s.bright_green());
+    let section_separator = get_full_width_separator('-', |s| s.bright_yellow());
+    
+    println!("{}", separator);
+    print_centered_title("项目提交与推送助手", |s| s.bright_green());
+    println!("{}", separator);
     println!();
 
     // 解析命令行参数
     let mut args = Args::parse();
 
-    // 如果命令行参数中没有提供提交消息，则提示用户输入
+    // 如果命令行参数中没有提供提交消息，则使用多行输入方式获取
     let commit_message = match &args.commit_message {
         Some(msg) => msg.clone(),
-        None => {
-            if let Some(input) = utils::input_with_default("请输入提交标注", "Normal Update")? {
-                input
-            } else {
-                String::from("Normal Update")
-            }
-        }
+        None => utils::get_multiline_commit_message()?
     };
 
     // 检查是否存在.github/workflows文件夹
@@ -95,23 +150,27 @@ fn main() -> Result<()> {
 
     // 显示操作概述
     println!();
-    println!("{}", "----- 操作概述 -----".bright_yellow());
-    println!("提交标注: \"{}\"", final_commit_message);
+    println!("{}", section_separator);
+    print_centered_title("操作概述", |s| s.bright_yellow());
+    println!("{}", section_separator);
+    println!("{}", "提交标注:".bright_yellow());
+    print_formatted_commit_message(&final_commit_message);
+    println!();
     
     if args.push {
-        println!("将推送到远程仓库: {}", args.remote);
+        println!("{} {}", "将推送到远程仓库:".bright_yellow(), args.remote);
         if has_workflows {
             if ci_enabled {
-                println!("CI 构建: 启用");
+                println!("{} {}", "CI 构建:".bright_yellow(), "启用".bright_green());
             } else {
-                println!("CI 构建: 禁用");
+                println!("{} {}", "CI 构建:".bright_yellow(), "禁用".bright_red());
             }
         } else {
-            println!("CI 构建: 不适用（未检测到工作流配置）");
+            println!("{} {}", "CI 构建:".bright_yellow(), "不适用（未检测到工作流配置）".bright_blue());
         }
     } else {
-        println!("不推送到远程仓库");
-        println!("CI 构建: 禁用");
+        println!("{} {}", "推送状态:".bright_yellow(), "不推送到远程仓库".bright_red());
+        println!("{} {}", "CI 构建:".bright_yellow(), "禁用".bright_red());
     }
 
     // 确认操作
@@ -123,13 +182,17 @@ fn main() -> Result<()> {
 
     // 处理日志文件
     println!();
-    println!("{}", "----- 开始处理日志 -----".bright_yellow());
+    println!("{}", section_separator);
+    print_centered_title("开始处理日志", |s| s.bright_yellow());
+    println!("{}", section_separator);
     log_manager::update_log_files(&final_commit_message).context("更新日志文件时出错")?;
 
     // 执行Git操作
     if args.push {
         println!();
-        println!("{}", "----- 执行提交和推送 -----".bright_yellow());
+        println!("{}", section_separator);
+        print_centered_title("执行提交和推送", |s| s.bright_yellow());
+        println!("{}", section_separator);
         
         // 提交到本地仓库
         println!("{}", "[INFO] 正在添加文件到暂存区并提交到本地仓库...".bright_blue());
@@ -145,9 +208,9 @@ fn main() -> Result<()> {
     }
 
     println!();
-    println!("{}", "====================================".bright_green());
-    println!("{}", "            操作已完成".bright_green());
-    println!("{}", "====================================".bright_green());
+    println!("{}", separator);
+    print_centered_title("操作已完成", |s| s.bright_green());
+    println!("{}", separator);
 
     Ok(())
 }
