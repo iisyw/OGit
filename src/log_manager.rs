@@ -90,7 +90,29 @@ fn create_today_log_file(today: &str, commit_message: &str) -> Result<()> {
     
     // 格式化提交消息并写入
     let formatted_message = format_commit_message_for_markdown(commit_message);
-    writeln!(file, "1. {}", formatted_message)?;
+    
+    // 对于多行消息，我们需要确保正确缩进
+    // 将格式化的消息按行分割
+    let lines: Vec<&str> = formatted_message.split('\n').collect();
+    
+    if lines.len() == 1 {
+        // 单行消息，直接添加
+        writeln!(file, "1. {}", formatted_message)?;
+    } else {
+        // 多行消息，需要缩进后续行以保持Markdown列表格式
+        writeln!(file, "1. {}", lines[0])?; // 写入第一行
+        
+        // 写入后续行，需要保持适当的缩进
+        for line in lines.iter().skip(1) {
+            if line.trim().is_empty() {
+                // 跳过空行
+                continue;
+            } else {
+                // 非空行，保持缩进
+                writeln!(file, "   {}", line)?;
+            }
+        }
+    }
     
     println!("{}", format!("[INFO] 已创建日志并添加到 {}", TODAY_LOG_FILE).bright_blue());
     Ok(())
