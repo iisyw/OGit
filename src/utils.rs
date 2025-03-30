@@ -1,5 +1,7 @@
-use anyhow::Result;
-use dialoguer::{Confirm, Input};
+use anyhow::{Context, Result};
+use dialoguer::{Confirm, theme::ColorfulTheme};
+use rustyline::DefaultEditor;
+use colored::Colorize;
 
 /// 获取用户确认
 /// 
@@ -10,10 +12,20 @@ use dialoguer::{Confirm, Input};
 /// # 返回值
 /// 如果用户确认，返回true，否则返回false
 pub fn confirm(message: &str, default: bool) -> Result<bool> {
-    Ok(Confirm::new()
+    Ok(Confirm::with_theme(&ColorfulTheme::default())
         .with_prompt(message)
         .default(default)
         .interact()?)
+}
+
+/// 使用rustyline获取单行输入
+fn get_input(prompt: &str) -> Result<String> {
+    let mut rl = DefaultEditor::new().context("无法初始化输入编辑器")?;
+    
+    // 获取输入
+    let input = rl.readline(prompt)?;
+    
+    Ok(input.trim().to_string())
 }
 
 /// 获取带默认值的用户输入
@@ -25,10 +37,8 @@ pub fn confirm(message: &str, default: bool) -> Result<bool> {
 /// # 返回值
 /// 如果用户输入了值，返回该值，否则返回默认值
 pub fn input_with_default(message: &str, default: &str) -> Result<Option<String>> {
-    let input: String = Input::new()
-        .with_prompt(format!("{} (默认: {})", message, default))
-        .allow_empty(true)
-        .interact()?;
+    let prompt = format!("{} (默认: {}): ", message, default);
+    let input = get_input(&prompt)?;
     
     if input.is_empty() {
         Ok(None)
@@ -43,24 +53,20 @@ pub fn input_with_default(message: &str, default: &str) -> Result<Option<String>
 /// 返回格式化后的提交标注字符串
 pub fn get_multiline_commit_message() -> Result<String> {
     // 获取标题
-    let title: String = Input::new()
-        .with_prompt("请输入提交标题")
-        .interact_text()?;
+    let title = get_input("请输入提交标题: ")?;
     
     if title.is_empty() {
         return Ok(String::from("Normal Update"));
     }
     
-    println!("请输入提交正文内容（每行一条，直接回车结束）：");
+    println!("{}", "请输入提交正文内容（每行一条，直接回车结束）".bright_yellow());
     
     let mut content_lines = Vec::new();
     let mut line_index = 1;
     
     loop {
-        let line: String = Input::new()
-            .with_prompt(format!("正文第{}行", line_index))
-            .allow_empty(true)
-            .interact_text()?;
+        let prompt = format!("正文第{}行: ", line_index);
+        let line = get_input(&prompt)?;
         
         if line.is_empty() {
             break;
@@ -73,7 +79,7 @@ pub fn get_multiline_commit_message() -> Result<String> {
     let result = if content_lines.is_empty() {
         title
     } else {
-        format!("{}\n\n{}", title, content_lines.join("\n"))
+        format!("{}\n{}", title, content_lines.join("\n"))
     };
     
     Ok(result)
@@ -83,4 +89,4 @@ pub fn get_multiline_commit_message() -> Result<String> {
 pub fn get_today() -> String {
     let now = chrono::Local::now();
     now.format("%Y/%m/%d").to_string()
-} 
+}
