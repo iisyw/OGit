@@ -140,7 +140,8 @@ pub fn get_multiline_commit_message() -> Result<String> {
     commit_content.title = get_input("请输入提交标题: ")?;
     
     if commit_content.title.is_empty() {
-        return Ok(String::from("Normal Update"));
+        commit_content.title = String::from("Normal Update");
+        println!("{}", "使用默认标题: Normal Update".bright_blue());
     }
     
     println!("{}", "请输入提交正文内容（每行一条，直接回车结束）".bright_yellow());
