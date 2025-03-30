@@ -2,8 +2,11 @@
 name = "pushgit"
 version = "0.1.0"
 edition = "2021"
-authors = ["Your Name"]
+authors = ["iisyw"]
 description = "A tool to commit code to git repository and record development logs"
+license = "MIT"
+repository = "https://github.com/iisyw/PushGit"
+readme = "README.md"
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
