@@ -61,8 +61,8 @@ fn edit_commit_content(content: &mut CommitContent) -> Result<bool> {
     
     if !content.content_lines.is_empty() {
         println!("{}", "正文:".bright_cyan());
-        for (i, line) in content.content_lines.iter().enumerate() {
-            println!("  {}. {}", i + 1, line.trim_start_matches("- "));
+        for line in content.content_lines.iter() {
+            println!("  {}", line);
         }
     }
     
@@ -71,6 +71,8 @@ fn edit_commit_content(content: &mut CommitContent) -> Result<bool> {
     println!("  0. 返回不修改");
     println!("  1. 编辑标题");
     
+    let max_option = content.content_lines.len() + 3;
+    
     for i in 0..content.content_lines.len() {
         println!("  {}. 编辑正文第{}行", i + 2, i + 1);
     }
@@ -78,7 +80,7 @@ fn edit_commit_content(content: &mut CommitContent) -> Result<bool> {
     println!("  {}. 添加新的正文行", content.content_lines.len() + 2);
     println!("  {}. 删除最后一行正文", content.content_lines.len() + 3);
     
-    let choice = get_input("请输入选择 (0-返回): ")?;
+    let choice = get_input(&format!("请输入选择 (0-{}): ", max_option))?;
     let choice = choice.parse::<usize>().unwrap_or(0);
     
     if choice == 0 {
