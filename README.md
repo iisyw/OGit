@@ -94,16 +94,50 @@ push.bat "更新依赖" -p -r origin -c
 在使用 PushGit 之前，请确保您的项目已满足以下条件：
 
 1. **Git 仓库已初始化**：项目目录必须是一个有效的 Git 仓库（已执行过`git init`）
-2. **至少有一次提交记录**：推荐先手动执行一次`git commit`，确保主分支已创建
-3. **已配置远程仓库**：如果需要推送功能，必须已设置远程仓库（如`git remote add github 仓库URL`）
+2. **已配置远程仓库**：如果需要推送功能，必须已设置远程仓库（如`git remote add github 仓库URL`）
 
 这些条件非常重要，因为：
 
 - 如果没有设置远程仓库，推送操作会失败
-- 如果是首次提交，可能会因为主分支（master/main）不存在而导致推送失败
-- 推送前必须确保本地分支与远程分支有正确的跟踪关系
+- 首次推送时可能需要设置上游分支关系
 
-建议首次使用前，先手动完成至少一次 Git 提交和推送操作，确保基本 Git 配置正确。
+虽然建议首次使用前先手动完成一次 Git 提交，但即使是全新仓库也可以使用 PushGit。如果遇到问题，只需按照下方的解决方案操作即可。
+
+### 首次推送常见问题解决
+
+如果您是首次使用 PushGit 推送到远程仓库，可能会遇到以下错误：
+
+![首次推送错误示例](images/first-push-error.png)
+
+```sh
+fatal: The current branch master has no upstream branch.
+To push the current branch and set the remote as upstream, use
+
+    git push --set-upstream github master
+
+To have this happen automatically for branches without a tracking
+upstream, see 'push.autoSetupRemote' in 'git help config'.
+
+Error: 推送操作失败
+```
+
+**解决方法**：
+
+1. 按照提示执行命令设置上游分支：
+
+   ```bash
+   git push --set-upstream github master
+   ```
+
+   （如果您使用的是 main 分支，将 master 替换为 main）
+
+2. 或者，配置 Git 自动设置上游分支：
+
+   ```bash
+   git config --global push.autoSetupRemote true
+   ```
+
+执行上述命令后，再次使用 PushGit 工具即可正常推送。这个错误只会在首次推送分支时出现，设置好跟踪关系后将不会再次遇到。
 
 ## 使用方法
 
