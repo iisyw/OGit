@@ -128,20 +128,29 @@ fn edit_commit_content(content: &mut CommitContent) -> Result<bool> {
 
 /// 获取多行输入作为提交标注
 ///
+/// # 参数
+/// * `default_title` - 可选的默认标题
+/// 
 /// # 返回值
 /// 返回格式化后的提交标注字符串
-pub fn get_multiline_commit_message() -> Result<String> {
+pub fn get_multiline_commit_message(default_title: Option<String>) -> Result<String> {
     let mut commit_content = CommitContent {
         title: String::new(),
         content_lines: Vec::new(),
     };
     
-    // 获取标题
-    commit_content.title = get_input("请输入提交标题: ")?;
-    
-    if commit_content.title.is_empty() {
-        commit_content.title = String::from("Normal Update");
-        println!("{}", "使用默认标题: Normal Update".bright_blue());
+    // 如果提供了默认标题，显示并使用
+    if let Some(title) = default_title {
+        println!("{} {}", "使用命令行提供的标题:".bright_blue(), title);
+        commit_content.title = title;
+    } else {
+        // 获取标题
+        commit_content.title = get_input("请输入提交标题: ")?;
+        
+        if commit_content.title.is_empty() {
+            commit_content.title = String::from("Normal Update");
+            println!("{}", "使用默认标题: Normal Update".bright_blue());
+        }
     }
     
     println!("{}", "请输入提交正文内容（每行一条，直接回车结束）".bright_yellow());

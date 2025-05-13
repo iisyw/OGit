@@ -101,11 +101,8 @@ fn main() -> Result<()> {
     // 解析命令行参数
     let mut args = Args::parse();
 
-    // 如果命令行参数中没有提供提交消息，则使用多行输入方式获取
-    let commit_message = match &args.commit_message {
-        Some(msg) => msg.clone(),
-        None => utils::get_multiline_commit_message()?
-    };
+    // 始终使用多行输入方式获取提交消息，如果命令行参数中提供了提交消息，则作为默认标题
+    let commit_message = utils::get_multiline_commit_message(args.commit_message.clone())?;
 
     // 检查是否存在.github/workflows文件夹
     let has_workflows = PathBuf::from(".github/workflows").exists();
