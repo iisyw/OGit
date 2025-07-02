@@ -1,11 +1,11 @@
 [package]
-name = "pushgit"
+name = "og"
 version = "0.1.0"
 edition = "2021"
 authors = ["iisyw"]
-description = "A tool to commit code to git repository and record development logs"
+description = "一个增强的Git操作工具，支持提交代码、记录开发日志和其他实用功能"
 license = "MIT"
-repository = "https://github.com/iisyw/PushGit"
+repository = "https://github.com/iisyw/OGit"
 readme = "README.md"
 
 [dependencies]

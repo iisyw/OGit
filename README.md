@@ -1,6 +1,6 @@
-# PushGit
+# OGit
 
-一个用 Rust 编写的 Git 提交和日志管理工具，可以帮助你轻松提交代码到 Git 仓库并自动记录开发日志。
+一个用 Rust 编写的增强型 Git 操作工具，可以帮助你轻松提交代码到 Git 仓库、自动记录开发日志，并提供其他实用的 Git 操作功能。
 
 ## 功能
 
@@ -18,65 +18,65 @@
 
 ### 方法一：使用预编译可执行文件（Windows）
 
-本项目根目录提供了预编译的 Windows 可执行文件`pushgit.exe`，适合没有安装 Rust 环境或不想编译的用户：
+本项目根目录提供了预编译的 Windows 可执行文件`og.exe`，适合没有安装 Rust 环境或不想编译的用户：
 
-1. 下载本仓库，或者只下载`pushgit.exe`文件
-2. 将`pushgit.exe`放置在任意位置，并将该位置添加到系统环境变量PATH中
+1. 下载本仓库，或者只下载`og.exe`文件
+2. 将`og.exe`放置在任意位置，并将该位置添加到系统环境变量PATH中
 
-这种方式无需安装 Rust 环境，并且添加到环境变量后可以在任意位置使用`pushgit`命令。
+这种方式无需安装 Rust 环境，并且添加到环境变量后可以在任意位置使用`og`命令。
 
 ### 方法二：从源码编译
 
 确保你已安装 Rust 环境，然后克隆此仓库并编译：
 
 ```bash
-git clone https://github.com/iisyw/PushGit.git
-cd pushgit
+git clone https://github.com/iisyw/OGit.git
+cd og
 cargo build --release
 ```
 
-编译后的可执行文件在`target/release`目录中。你可以将该目录添加到环境变量PATH中，或者将`pushgit.exe`复制到已在PATH中的目录。
+编译后的可执行文件在`target/release`目录中。你可以将该目录添加到环境变量PATH中，或者将`og.exe`复制到已在PATH中的目录。
 
 ### 方法三：使用 Cargo 安装
 
 如果你已经安装了 Rust 和 Cargo，可以直接使用以下命令安装：
 
 ```bash
-cargo install --git https://github.com/iisyw/PushGit.git
+cargo install --git https://github.com/iisyw/OGit.git
 ```
 
-这将自动下载、编译并安装 PushGit 到你的系统中（通常在`~/.cargo/bin`目录下），该目录通常已添加到环境变量PATH中。
+这将自动下载、编译并安装 OGit 到你的系统中（通常在`~/.cargo/bin`目录下），该目录通常已添加到环境变量PATH中。
 
 ## 添加到环境变量PATH（Windows）
 
-将PushGit添加到环境变量，可以在任何位置使用`pushgit`命令：
+将OGit添加到环境变量，可以在任何位置使用`og`命令：
 
 1. 右键点击"此电脑"或"我的电脑"，选择"属性"
 2. 点击"高级系统设置"
 3. 点击"环境变量"
 4. 在"系统变量"或"用户变量"部分找到"Path"变量并选择"编辑"
-5. 点击"新建"，添加pushgit.exe所在的完整路径
+5. 点击"新建"，添加og.exe所在的完整路径
 6. 点击"确定"保存更改
 
-重新打开命令提示符或PowerShell后，你就可以在任何位置使用`pushgit`命令了。
+重新打开命令提示符或PowerShell后，你就可以在任何位置使用`og`命令了。
 
 ## 使用前提条件
 
-在使用 PushGit 之前，请确保您的项目已满足以下条件：
+在使用 OGit 之前，请确保您的项目已满足以下条件：
 
 1. **Git 仓库已初始化**：项目目录必须是一个有效的 Git 仓库（已执行过`git init`）
-2. **已配置远程仓库**：如果需要推送功能，必须已设置远程仓库（如`git remote add github 仓库URL`）
+2. **已配置远程仓库**：如果需要推送功能，必须已设置远程仓库（如`git remote add origin 仓库URL`）
 
 这些条件非常重要，因为：
 
 - 如果没有设置远程仓库，推送操作会失败
 - 首次推送时可能需要设置上游分支关系
 
-虽然建议首次使用前先手动完成一次 Git 提交，但即使是全新仓库也可以使用 PushGit。如果遇到问题，只需按照下方的解决方案操作即可。
+虽然建议首次使用前先手动完成一次 Git 提交，但即使是全新仓库也可以使用 OGit。如果遇到问题，只需按照下方的解决方案操作即可。
 
 ### 首次推送常见问题解决
 
-如果您是首次使用 PushGit 推送到远程仓库，可能会遇到以下错误：
+如果您是首次使用 OGit 推送到远程仓库，可能会遇到以下错误：
 
 ![首次推送错误示例](images/first-push-error.png)
 
@@ -84,7 +84,7 @@ cargo install --git https://github.com/iisyw/PushGit.git
 fatal: The current branch master has no upstream branch.
 To push the current branch and set the remote as upstream, use
 
-    git push --set-upstream github master
+    git push --set-upstream origin master
 
 To have this happen automatically for branches without a tracking
 upstream, see 'push.autoSetupRemote' in 'git help config'.
@@ -97,7 +97,7 @@ Error: 推送操作失败
 1. 按照提示执行命令设置上游分支：
 
    ```bash
-   git push --set-upstream github master
+   git push --set-upstream origin master
    ```
 
    （如果您使用的是 main 分支，将 master 替换为 main）
@@ -108,14 +108,14 @@ Error: 推送操作失败
    git config --global push.autoSetupRemote true
    ```
 
-执行上述命令后，再次使用 PushGit 工具即可正常推送。这个错误只会在首次推送分支时出现，设置好跟踪关系后将不会再次遇到。
+执行上述命令后，再次使用 OGit 工具即可正常推送。这个错误只会在首次推送分支时出现，设置好跟踪关系后将不会再次遇到。
 
 ## 使用方法
 
 ### 基本用法
 
 ```bash
-pushgit
+og
 ```
 
 这将启动完全交互式提示，依次询问：
@@ -137,7 +137,7 @@ pushgit
 您也可以直接在命令行指定提交标注：
 
 ```bash
-pushgit "提交消息"
+og "提交消息"
 ```
 
 当提供命令行参数时，该参数将作为提交标题，并且程序仍然会提示您输入正文内容。这样可以快速设置标题的同时，还能灵活地添加详细的正文说明。
@@ -189,19 +189,19 @@ pushgit "提交消息"
 ### 命令行选项
 
 ```bash
-# 提交并推送到默认远程仓库(github)
-pushgit "提交消息" -p
+# 提交并推送到默认远程仓库(origin)
+og "提交消息" -p
 
 # 提交并推送到指定远程仓库
-pushgit "提交消息" -p -r origin
+og "提交消息" -p -r origin
 
 # 启用CI构建
-pushgit "提交消息" -p -c
+og "提交消息" -p -c
 
 # 禁用CI构建(添加[skip ci]标记)
-pushgit "提交消息" -p -n
+og "提交消息" -p -n
 # 或者使用别名
-pushgit "提交消息" -p --nc
+og "提交消息" -p --nc
 ```
 
 无论是否在命令行中提供提交消息，程序都会进入完整的交互式流程，允许您输入详细的正文内容。命令行参数只是提供了一个初始的标题值。
@@ -210,7 +210,7 @@ pushgit "提交消息" -p --nc
 
 - `提交消息`: 提交的说明文字，将作为默认标题
 - `-p, --push`: 是否推送到远程仓库
-- `-r, --remote <REMOTE>`: 远程仓库名称，默认为"github"
+- `-r, --remote <REMOTE>`: 远程仓库名称，默认为"origin"
 - `-c, --ci`: 启用 CI 构建
 - `-n, --no-ci, --nc`: 禁用 CI 构建，添加[skip ci]标记
 

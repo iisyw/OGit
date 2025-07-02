@@ -19,7 +19,7 @@ struct Args {
     push: bool,
 
     /// 远程仓库名称
-    #[arg(short, long, default_value = "github")]
+    #[arg(short, long, default_value = "origin")]
     remote: String,
 
     /// 是否启用CI构建
@@ -116,8 +116,8 @@ fn main() -> Result<()> {
     }
 
     // 如果选择推送到远程仓库，且未通过命令行参数指定远程仓库名称，则询问远程仓库名称
-    if args.push && args.remote == "github" {
-        if let Some(remote_name) = utils::input_with_default("请输入远程仓库名称", "github")? {
+    if args.push && args.remote == "origin" {
+        if let Some(remote_name) = utils::input_with_default("请输入远程仓库名称", "origin")? {
             args.remote = remote_name;
         }
     }
