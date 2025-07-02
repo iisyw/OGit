@@ -104,12 +104,6 @@ fn main() -> Result<()> {
     // 始终使用多行输入方式获取提交消息，如果命令行参数中提供了提交消息，则作为默认标题
     let commit_message = utils::get_multiline_commit_message(args.commit_message.clone())?;
 
-    // 检查是否存在.github/workflows文件夹
-    let has_workflows = PathBuf::from(".github/workflows").exists();
-    if has_workflows {
-        println!("{}", "[INFO] 检测到 CI 工作流配置".bright_blue());
-    }
-
     // 如果未通过命令行参数指定，则交互式询问是否推送到远程仓库
     if !args.push {
         args.push = utils::confirm("是否需要推送到远程仓库?", true)?;
@@ -122,20 +116,27 @@ fn main() -> Result<()> {
         }
     }
 
+    // 检查是否存在.github/workflows文件夹并处理CI构建选项
+    let has_workflows = PathBuf::from(".github/workflows").exists();
+    
     // 确定CI构建选项
     let ci_enabled = if args.no_ci {
         false
     } else if args.ci {
         true
-    } else if has_workflows && args.push {
-        // 如果存在workflows且需要推送，则询问是否进行CI构建
-        utils::confirm("是否需要进行 CI 构建?", false)?
-    } else if !has_workflows {
+    } else if has_workflows {
+        if args.push {
+            // 如果检测到CI工作流配置且需要推送，提示用户并询问是否进行CI构建
+            println!("{}", "[INFO] 检测到 CI 工作流配置".bright_blue());
+            utils::confirm("是否需要进行 CI 构建?", false)?
+        } else {
+            // 如果不推送，则默认禁用CI构建
+            false
+        }
+    } else {
         // 如果不存在workflows，默认不添加[skip ci]标记
         println!("{}", "[INFO] 未检测到 CI 工作流配置，默认不添加 [skip ci] 标记".bright_blue());
         true
-    } else {
-        false
     };
 
     // 如果不需要CI构建，添加[skip ci]到提交信息
