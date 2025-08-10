@@ -257,20 +257,24 @@ pub fn get_today() -> String {
     now.format("%Y/%m/%d").to_string()
 }
 
-/// 获取用户必须输入的单行文本
-///
-/// # 参数
-/// * `prompt` - 提示信息
+/// Git Reset 模式定义
+const RESET_MODES: &[(&str, &str)] = &[
+    ("soft", "保留工作区和暂存区的更改"),
+    ("mixed", "保留工作区的更改，但重置暂存区 (默认)"),
+    ("hard", "同时丢弃工作区和暂存区的更改 (危险操作)"),
+];
+
+/// 交互式选择 Git Reset 模式
 ///
 /// # 返回值
-/// 返回用户输入的字符串
-pub fn get_required_input(prompt: &str) -> Result<String> {
-    let mut input = String::new();
-    while input.is_empty() {
-        input = get_input(prompt)?;
-        if input.is_empty() {
-            println!("{}", "输入不能为空，请重新输入。".bright_red());
-        }
-    }
-    Ok(input)
+/// 返回选择的模式字符串
+pub fn select_reset_mode() -> Result<String> {
+    let selection = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("请选择回退模式")
+        .items(&RESET_MODES.iter().map(|(val, desc)| format!("{:<8} - {}", val, desc)).collect::<Vec<_>>())
+        .default(1) // 默认选中 mixed
+        .interact()
+        .context("无法获取用户选择")?;
+    
+    Ok(RESET_MODES[selection].0.to_string())
 }

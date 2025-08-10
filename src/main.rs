@@ -68,18 +68,6 @@ struct CommitArgs {
 
 #[derive(Parser, Debug)]
 struct ResetArgs {
-    /// 使用 soft 模式回退
-    #[arg(long)]
-    soft: bool,
-
-    /// 使用 mixed 模式回退
-    #[arg(long)]
-    mixed: bool,
-
-    /// 使用 hard 模式回退
-    #[arg(long)]
-    hard: bool,
-
     /// 回退的目标 (例如: HEAD~1, a1b2c3d)
     #[arg(required = false)]
     target: Option<String>,
@@ -175,30 +163,35 @@ fn run_reset_workflow(args: &ResetArgs) -> Result<()> {
     println!("{}", separator);
     println!();
 
-    let mode = if args.soft {
-        "soft"
-    } else if args.hard {
-        "hard"
-    } else {
-        "mixed" // 默认为 mixed
-    };
+    // 交互式选择回退模式
+    let mode = utils::select_reset_mode()?;
 
-    // 如果未提供目标，则提示用户输入
+    // 如果命令行未提供目标，则提示用户输入，并提供默认值
     let target = match &args.target {
         Some(t) => t.clone(),
-        None => utils::get_required_input("请输入回退目标 (例如: HEAD~1, a1b2c3d): ")?,
+        None => {
+            utils::input_with_default("请输入回退目标 (例如: HEAD~1 或 commit hash)", "HEAD~1")?
+                .unwrap_or_else(|| "HEAD~1".to_string())
+        }
     };
 
+    println!();
     println!("模式: {}", mode.bright_yellow());
     println!("目标: {}", target.bright_yellow());
     println!();
 
-    if !utils::confirm("确认执行回退操作吗? 这是一个潜在的破坏性操作。", false)? {
+    let (confirm_message, default_confirm) = if mode == "hard" {
+        ("确认执行 hard 模式回退吗? 这将丢失工作区和暂存区的代码！", false)
+    } else {
+        ("确认执行回退操作吗?", true)
+    };
+
+    if !utils::confirm(confirm_message, default_confirm)? {
         println!("操作已取消。");
         return Ok(());
     }
 
-    git::reset(mode, &target).context("Git回退操作失败")?;
+    git::reset(&mode, &target).context("Git回退操作失败")?;
 
     println!();
     println!("{}", separator);
