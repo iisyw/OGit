@@ -4,6 +4,21 @@ use rustyline::DefaultEditor;
 use colored::Colorize;
 use std::fmt::Write as FmtWrite;
 
+/// Conventional Commits 类型定义
+const COMMIT_TYPES: &[(&str, &str)] = &[
+    ("feat", "新功能 (A new feature)"),
+    ("fix", "Bug修复 (A bug fix)"),
+    ("docs", "文档变更 (Documentation only changes)"),
+    ("style", "代码风格 (Changes that do not affect the meaning of the code)"),
+    ("refactor", "代码重构 (A code change that neither fixes a bug nor adds a feature)"),
+    ("perf", "性能优化 (A code change that improves performance)"),
+    ("test", "测试相关 (Adding missing tests or correcting existing tests)"),
+    ("build", "构建系统或外部依赖变更 (Changes that affect the build system or external dependencies)"),
+    ("ci", "CI/CD配置文件和脚本的变更 (Changes to our CI configuration files and scripts)"),
+    ("chore", "其他不修改 src 或 test 文件的变更 (Other changes that don't modify src or test files)"),
+    ("revert", "回退之前的提交 (Reverts a previous commit)"),
+];
+
 /// 获取用户确认
 /// 
 /// # 参数
@@ -133,25 +148,43 @@ fn edit_commit_content(content: &mut CommitContent) -> Result<bool> {
 /// 
 /// # 返回值
 /// 返回格式化后的提交标注字符串
-pub fn get_multiline_commit_message(default_title: Option<String>) -> Result<String> {
+use dialoguer::Select;
+
+pub fn get_multiline_commit_message(_default_title: Option<String>) -> Result<String> {
     let mut commit_content = CommitContent {
         title: String::new(),
         content_lines: Vec::new(),
     };
-    
-    // 如果提供了默认标题，显示并使用
-    if let Some(title) = default_title {
-        println!("{} {}", "使用命令行提供的标题:".bright_blue(), title);
-        commit_content.title = title;
-    } else {
-        // 获取标题
-        commit_content.title = get_input("请输入提交标题: ")?;
-        
-        if commit_content.title.is_empty() {
-            commit_content.title = String::from("Normal Update");
-            println!("{}", "使用默认标题: Normal Update".bright_blue());
+
+    // 1. 选择提交类型
+    let selection = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("请选择提交类型")
+        .items(&COMMIT_TYPES.iter().map(|(val, desc)| format!("{:<10} - {}", val, desc)).collect::<Vec<_>>())
+        .default(0)
+        .interact()
+        .context("无法获取用户选择")?;
+    let commit_type = COMMIT_TYPES[selection].0;
+
+    // 2. 输入影响范围 (可选)
+    let scope = input_with_default("请输入影响范围 (可选, 直接回车跳过)", "")?
+        .filter(|s| !s.is_empty());
+
+    // 3. 输入简短描述
+    let mut subject = String::new();
+    while subject.is_empty() {
+        subject = get_input("请输入简短描述: ")?;
+        if subject.is_empty() {
+            println!("{}", "简短描述不能为空，请重新输入。".bright_red());
         }
     }
+
+    // 4. 组合标题
+    let mut title = format!("{}", commit_type);
+    if let Some(s) = scope {
+        title.push_str(&format!("({})", s));
+    }
+    title.push_str(&format!(": {}", subject));
+    commit_content.title = title;
     
     println!("{}", "请输入提交正文内容（每行一条，直接回车结束）".bright_yellow());
     
