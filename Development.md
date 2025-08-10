@@ -51,3 +51,7 @@
 
 1. 修改默认远程仓库名称为origin，修改项目名和命令名改为og，意为操作git
 2. 优化CI工作流检测以及询问是否进行CI构建操作 [skip ci]
+
+## 2025/08/04
+
+1. 添加.gitattributes [skip ci]
