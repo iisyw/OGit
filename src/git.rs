@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use git2::{Repository, StatusOptions};
+use std::path::Path;
 // use std::process::Command;
 
 /// 打开当前目录的Git仓库
@@ -73,8 +74,26 @@ pub fn push(remote_name: &str) -> Result<()> {
     // 设置认证回调
     let mut callbacks = git2::RemoteCallbacks::new();
     callbacks.credentials(|_url, username_from_url, _allowed_types| {
-        // 优先使用ssh-agent或Pageant认证
-        git2::Cred::ssh_key_from_agent(username_from_url.unwrap_or("git"))
+        let username = username_from_url.unwrap_or("git");
+        
+        // 1. 尝试通过 SSH Agent 获取凭证
+        if let Ok(cred) = git2::Cred::ssh_key_from_agent(username) {
+            return Ok(cred);
+        }
+
+        // 2. 如果 Agent 失败, 尝试从默认路径加载 SSH 密钥
+        //    - ~/.ssh/id_rsa
+        if let Ok(cred) = git2::Cred::ssh_key(
+            username,
+            None, // pubkey
+            Path::new(&format!("{}/.ssh/id_rsa", std::env::var("HOME").unwrap())),
+            None, // passphrase
+        ) {
+            return Ok(cred);
+        }
+
+        // 3. 如果两种方式都失败，返回错误
+        Err(git2::Error::from_str("无法通过 SSH Agent 或默认密钥路径进行认证"))
     });
 
     // 设置推送选项
