@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use colored::Colorize;
 use std::path::PathBuf;
 
@@ -9,7 +9,11 @@ mod utils;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
-struct Args {
+#[command(propagate_version = true)]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<Commands>,
+
     /// 提交消息
     #[arg(default_value = None)]
     commit_message: Option<String>,
@@ -29,6 +33,56 @@ struct Args {
     /// 是否禁用CI构建
     #[arg(short = 'n', long = "no-ci", alias = "nc")]
     no_ci: bool,
+}
+
+#[derive(Subcommand, Debug)]
+enum Commands {
+    /// 提交代码并更新日志 (默认操作)
+    Commit(CommitArgs),
+    /// 回退到指定的提交
+    Reset(ResetArgs),
+}
+
+#[derive(Parser, Debug)]
+struct CommitArgs {
+    /// 提交消息
+    #[arg(default_value = None)]
+    commit_message: Option<String>,
+
+    /// 是否推送到远程仓库
+    #[arg(short, long)]
+    push: bool,
+
+    /// 远程仓库名称
+    #[arg(short, long, default_value = "origin")]
+    remote: String,
+
+    /// 是否启用CI构建
+    #[arg(short, long)]
+    ci: bool,
+
+    /// 是否禁用CI构建
+    #[arg(short = 'n', long = "no-ci", alias = "nc")]
+    no_ci: bool,
+}
+
+#[derive(Parser, Debug)]
+struct ResetArgs {
+    /// 使用 soft 模式回退
+    #[arg(long)]
+    soft: bool,
+
+    /// 使用 mixed 模式回退
+    #[arg(long)]
+    mixed: bool,
+
+    /// 使用 hard 模式回退
+    #[arg(long)]
+    hard: bool,
+
+    /// 回退的目标 (例如: HEAD~1, a1b2c3d)
+    #[arg(required = false)]
+    target: Option<String>,
 }
 
 /// 获取自适应全屏宽度的分隔线
@@ -89,6 +143,72 @@ fn print_formatted_commit_message(message: &str) {
 }
 
 fn main() -> Result<()> {
+    let cli = Cli::parse();
+
+    match cli.command {
+        Some(Commands::Commit(mut args)) => {
+            run_commit_workflow(&mut args)?;
+        }
+        Some(Commands::Reset(args)) => {
+            run_reset_workflow(&args)?;
+        }
+        None => {
+            // Default to commit workflow
+            let mut args = CommitArgs {
+                commit_message: cli.commit_message,
+                push: cli.push,
+                remote: cli.remote,
+                ci: cli.ci,
+                no_ci: cli.no_ci,
+            };
+            run_commit_workflow(&mut args)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn run_reset_workflow(args: &ResetArgs) -> Result<()> {
+    let separator = get_full_width_separator('=', |s| s.bright_red());
+    println!("{}", separator);
+    print_centered_title("Git 回退操作", |s| s.bright_red());
+    println!("{}", separator);
+    println!();
+
+    let mode = if args.soft {
+        "soft"
+    } else if args.hard {
+        "hard"
+    } else {
+        "mixed" // 默认为 mixed
+    };
+
+    // 如果未提供目标，则提示用户输入
+    let target = match &args.target {
+        Some(t) => t.clone(),
+        None => utils::get_required_input("请输入回退目标 (例如: HEAD~1, a1b2c3d): ")?,
+    };
+
+    println!("模式: {}", mode.bright_yellow());
+    println!("目标: {}", target.bright_yellow());
+    println!();
+
+    if !utils::confirm("确认执行回退操作吗? 这是一个潜在的破坏性操作。", false)? {
+        println!("操作已取消。");
+        return Ok(());
+    }
+
+    git::reset(mode, &target).context("Git回退操作失败")?;
+
+    println!();
+    println!("{}", separator);
+    print_centered_title("回退操作已完成", |s| s.bright_green());
+    println!("{}", separator);
+
+    Ok(())
+}
+
+fn run_commit_workflow(args: &mut CommitArgs) -> Result<()> {
     // 创建自适应全屏分割线
     let separator = get_full_width_separator('=', |s| s.bright_green());
     let section_separator = get_full_width_separator('-', |s| s.bright_yellow());
@@ -97,9 +217,6 @@ fn main() -> Result<()> {
     print_centered_title("项目提交与推送助手", |s| s.bright_green());
     println!("{}", separator);
     println!();
-
-    // 解析命令行参数
-    let mut args = Args::parse();
 
     // 始终使用多行输入方式获取提交消息，如果命令行参数中提供了提交消息，则作为默认标题
     let commit_message = utils::get_multiline_commit_message(args.commit_message.clone())?;
@@ -199,7 +316,20 @@ fn main() -> Result<()> {
         
         // 推送到远程仓库
         println!("{}", format!("[INFO] 正在推送到远程仓库 [{}]...", args.remote).bright_blue());
-        git::push(&args.remote).context("推送操作失败")?;
+        
+        // 检查分支是否分歧
+        let mut force_push = false;
+        if git::is_diverged(&args.remote)? {
+            println!("{}", "[WARNING] 检测到本地分支与远程分支存在分歧，可能需要强制推送。".bright_yellow());
+            if utils::confirm("是否要强制推送 (--force-with-lease)？", false)? {
+                force_push = true;
+            } else {
+                println!("操作已取消。");
+                return Ok(());
+            }
+        }
+        
+        git::push(&args.remote, force_push).context("推送操作失败")?;
         println!("{}", format!("[SUCCESS] 成功推送到远程仓库 [{}]", args.remote).bright_green());
     } else {
         println!("{}", "[INFO] Git操作已禁用，仅更新日志。".bright_blue());

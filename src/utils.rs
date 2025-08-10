@@ -256,3 +256,21 @@ pub fn get_today() -> String {
     let now = chrono::Local::now();
     now.format("%Y/%m/%d").to_string()
 }
+
+/// 获取用户必须输入的单行文本
+///
+/// # 参数
+/// * `prompt` - 提示信息
+///
+/// # 返回值
+/// 返回用户输入的字符串
+pub fn get_required_input(prompt: &str) -> Result<String> {
+    let mut input = String::new();
+    while input.is_empty() {
+        input = get_input(prompt)?;
+        if input.is_empty() {
+            println!("{}", "输入不能为空，请重新输入。".bright_red());
+        }
+    }
+    Ok(input)
+}
