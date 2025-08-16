@@ -150,7 +150,7 @@ fn edit_commit_content(content: &mut CommitContent) -> Result<bool> {
 /// 返回格式化后的提交标注字符串
 use dialoguer::Select;
 
-pub fn get_multiline_commit_message(_default_title: Option<String>) -> Result<String> {
+pub fn get_multiline_commit_message(default_title: Option<String>) -> Result<String> {
     let mut commit_content = CommitContent {
         title: String::new(),
         content_lines: Vec::new(),
@@ -165,25 +165,22 @@ pub fn get_multiline_commit_message(_default_title: Option<String>) -> Result<St
         .context("无法获取用户选择")?;
     let commit_type = COMMIT_TYPES[selection].0;
 
-    // 2. 输入影响范围 (可选)
-    let scope = input_with_default("请输入影响范围 (可选, 直接回车跳过)", "")?
-        .filter(|s| !s.is_empty());
-
-    // 3. 输入简短描述
-    let mut subject = String::new();
-    while subject.is_empty() {
-        subject = get_input("请输入简短描述: ")?;
-        if subject.is_empty() {
-            println!("{}", "简短描述不能为空，请重新输入。".bright_red());
+    // 2. 输入简短描述 (如果命令行没有提供)
+    let subject = if let Some(title) = default_title {
+        title
+    } else {
+        let mut subj = String::new();
+        while subj.is_empty() {
+            subj = get_input("请输入简短描述: ")?;
+            if subj.is_empty() {
+                println!("{}", "简短描述不能为空，请重新输入。".bright_red());
+            }
         }
-    }
+        subj
+    };
 
-    // 4. 组合标题
-    let mut title = format!("{}", commit_type);
-    if let Some(s) = scope {
-        title.push_str(&format!("({})", s));
-    }
-    title.push_str(&format!(": {}", subject));
+    // 3. 组合标题
+    let title = format!("{}: {}", commit_type, subject);
     commit_content.title = title;
     
     println!("{}", "请输入提交正文内容（每行一条，直接回车结束）".bright_yellow());

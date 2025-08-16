@@ -1,6 +1,3 @@
-## 2025/08/10
+## 2025/08/16
 
-1. 增加操作的运行命令
-2. feat: 集成Conventional Commits
-3. feat: 增加reset子命令
-4. feat: 优化reset使用体验，增加更多交互
+1. fix: 去除影响范围，修复命令后跟简短描述不被提取的bug
